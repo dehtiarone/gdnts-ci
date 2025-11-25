@@ -1,0 +1,54 @@
+# Garden Module for Validators
+# Contains validation tasks that test deployed services
+
+---
+# Validation task: Test ingress connectivity from inside the cluster
+kind: Run
+type: exec
+name: validate-ingress
+description: Test ingress routing to foo and bar services (fail-fast)
+
+dependencies:
+  - deploy.http-echo
+
+spec:
+  command:
+    - bash
+    - -c
+    - |
+      set -euo pipefail
+      KUBECTL="${local.projectPath}/.tools/bin/kubectl"
+      export KUBECONFIG="${local.projectPath}/.kube/config"
+
+      echo "🔍 Testing ingress connectivity..."
+
+      # Run curl tests from inside the cluster via temporary pod
+      # Note: INGRESS_SVC is hardcoded in the inner shell to avoid Garden template interpolation
+      $KUBECTL run ingress-test --rm -i --restart=Never \
+        --image=curlimages/curl:8.5.0 \
+        --timeout=60s \
+        --overrides='{"spec":{"tolerations":[{"operator":"Exists"}]}}' \
+        -- sh -c '
+          set -e
+          INGRESS_SVC="ingress-nginx-controller.ingress-nginx.svc.cluster.local"
+
+          echo "Testing foo.localhost via HTTPS..."
+          RESP=$(curl -sfk -H "Host: foo.localhost" https://$INGRESS_SVC/)
+          if [ "$RESP" = "foo" ]; then
+            echo "✅ foo.localhost OK"
+          else
+            echo "❌ FAIL: Expected foo, got $RESP"
+            exit 1
+          fi
+
+          echo "Testing bar.localhost via HTTPS..."
+          RESP=$(curl -sfk -H "Host: bar.localhost" https://$INGRESS_SVC/)
+          if [ "$RESP" = "bar" ]; then
+            echo "✅ bar.localhost OK"
+          else
+            echo "❌ FAIL: Expected bar, got $RESP"
+            exit 1
+          fi
+        '
+
+      echo "✅ All ingress tests passed"

@@ -1,0 +1,34 @@
+# Garden Module for cert-manager
+# Deploys cert-manager and self-signed ClusterIssuer
+
+kind: Deploy
+type: helm
+name: cert-manager
+description: Deploy cert-manager for TLS certificate management
+
+# No dependencies - order is controlled by Makefile
+
+spec:
+  chart:
+    name: cert-manager
+    repo: https://charts.jetstack.io
+    version: "v1.19.1"
+  namespace: cert-manager
+  releaseName: cert-manager
+  valueFiles:
+    - values.yaml
+  timeout: 300
+  atomic: true
+
+---
+kind: Deploy
+type: kubernetes
+name: cert-manager-manifests
+description: Deploy ClusterIssuer and related resources
+
+# No dependencies - order is controlled by Makefile
+
+spec:
+  manifestFiles:
+    - manifests/*.yaml
+  namespace: cert-manager

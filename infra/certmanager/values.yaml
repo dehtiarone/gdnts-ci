@@ -1,0 +1,68 @@
+# cert-manager Helm Values
+# Configured with CRDs and Prometheus metrics
+
+# Install CRDs with the chart
+crds:
+  enabled: true
+  keep: true
+
+# Prometheus metrics
+# ServiceMonitor will be created after Prometheus is deployed
+prometheus:
+  enabled: true
+  servicemonitor:
+    enabled: false
+
+# Tolerations for control-plane taint (infrastructure runs on control-plane)
+tolerations:
+  - key: "node-role.kubernetes.io/control-plane"
+    operator: "Exists"
+    effect: "NoSchedule"
+
+# Resource limits
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+# Webhook configuration
+webhook:
+  tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# CA Injector configuration
+cainjector:
+  tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# Startup API check job configuration
+startupapicheck:
+  tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+# Logging
+global:
+  logLevel: 2

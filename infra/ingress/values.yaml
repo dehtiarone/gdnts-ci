@@ -1,0 +1,55 @@
+# nginx-ingress Controller Helm Values
+# Configured for Kind cluster with hostPort access
+
+controller:
+  # Use hostPort for Kind compatibility (no LoadBalancer)
+  hostPort:
+    enabled: true
+    ports:
+      http: 80
+      https: 443
+
+  # Node selector for ingress-ready nodes
+  nodeSelector:
+    ingress-ready: "true"
+
+  # Tolerate control-plane taint for Kind (use Exists operator)
+  tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+  # Service configuration
+  service:
+    type: NodePort
+
+  # Enable Prometheus metrics
+  # ServiceMonitor will be created after Prometheus is deployed
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+
+  # Resource limits
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Admission webhooks - patch jobs must tolerate ALL taints
+  admissionWebhooks:
+    enabled: true
+    patch:
+      enabled: true
+      tolerations:
+        - operator: "Exists"
+
+# Default backend (optional)
+defaultBackend:
+  enabled: false

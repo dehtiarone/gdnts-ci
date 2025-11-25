@@ -1,0 +1,59 @@
+# Garden Project Configuration for gdnts CI Pipeline
+# This file defines the project structure and provider configuration
+
+apiVersion: garden.io/v2
+kind: Project
+name: gdnts-ci
+
+# Default environment for local development and CI
+defaultEnvironment: local
+
+environments:
+  - name: local
+    defaultNamespace: default
+
+# Provider configuration for local Kubernetes (Kind)
+providers:
+  - name: local-kubernetes
+    environments: [local]
+    # Context will be set by Kind cluster creation
+    context: kind-gdnts-ci
+    # Path to kubeconfig file
+    kubeconfig: ${local.projectPath}/.kube/config
+    # Build mode for container images
+    buildMode: local-docker
+    # Skip Garden's built-in ingress controller - we have our own
+    setupIngressController: false
+    # Namespace configuration
+    namespace:
+      name: default
+
+# Scan configuration - defines which directories contain Garden modules
+# Only include directories with actual Garden modules:
+#   - cluster: Kind cluster lifecycle (create, validate, delete)
+#   - infra: Infrastructure deployments (ingress, cert-manager, prometheus)
+#   - charts: Application helm charts (http-echo)
+#   - validators: Validation tasks for ingress connectivity testing
+scan:
+  include:
+    - "cluster/**/*"
+    - "infra/**/*"
+    - "charts/**/*"
+    - "validators/**/*"
+
+# Variable definitions for the project
+variables:
+  # Cluster configuration
+  clusterName: gdnts-ci
+
+  # Helm chart versions (pinned for supply chain security)
+  ingressNginxVersion: "4.14.0"
+  certManagerVersion: "v1.19.1"
+  prometheusStackVersion: "79.7.1"
+
+  # Application configuration
+  httpEchoImage: "hashicorp/http-echo"
+  httpEchoTag: "latest"
+
+  # Load test configuration
+  loadTestDuration: "5m"

@@ -1,0 +1,61 @@
+# Garden Module for Kind Cluster Lifecycle Management
+# Provides tasks for creating, validating, and deleting the cluster
+# Uses Makefile-downloaded binaries from .tools/bin/
+
+kind: Run
+type: exec
+name: cluster-create
+description: Create Kind cluster with 2 nodes (1 control-plane, 1 worker)
+
+spec:
+  command:
+    - ${local.projectPath}/.tools/bin/kind
+    - create
+    - cluster
+    - --config
+    - ${local.projectPath}/kind-config.yaml
+    - --wait
+    - 5m
+  env:
+    KUBECONFIG: ${local.projectPath}/.kube/config
+
+---
+kind: Run
+type: exec
+name: cluster-validate
+description: Validate cluster is healthy and all nodes are ready
+dependencies:
+  - run.cluster-create
+
+spec:
+  command:
+    - sh
+    - -c
+    - |
+      set -e
+      KUBECTL="${local.projectPath}/.tools/bin/kubectl"
+      echo "Waiting for all nodes to be ready..."
+      $KUBECTL wait --for=condition=Ready nodes --all --timeout=120s
+      echo "Checking cluster info..."
+      $KUBECTL cluster-info
+      echo "Listing nodes..."
+      $KUBECTL get nodes -o wide
+      echo "Cluster validation successful!"
+  env:
+    KUBECONFIG: ${local.projectPath}/.kube/config
+
+---
+kind: Run
+type: exec
+name: cluster-delete
+description: Delete Kind cluster and clean up resources
+
+spec:
+  command:
+    - ${local.projectPath}/.tools/bin/kind
+    - delete
+    - cluster
+    - --name
+    - gdnts-ci
+  env:
+    KUBECONFIG: ${local.projectPath}/.kube/config

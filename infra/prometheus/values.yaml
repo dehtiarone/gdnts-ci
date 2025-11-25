@@ -1,0 +1,144 @@
+# kube-prometheus-stack Helm Values
+# Configured with 5-second scrape interval and remote write receiver enabled
+
+# CRD installation - MUST be true for fresh installs
+crds:
+  enabled: true
+
+# Prometheus configuration
+prometheus:
+  prometheusSpec:
+    # 5-second scrape interval as required
+    scrapeInterval: 5s
+    evaluationInterval: 5s
+
+    # Enable remote write receiver endpoint
+    enableRemoteWriteReceiver: true
+
+    # Retention settings
+    retention: 1h
+    retentionSize: 1GB
+
+    # Tolerations for control-plane taint (infrastructure runs on control-plane)
+    tolerations:
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"
+
+    # Resource limits
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+
+    # Storage configuration (ephemeral for CI)
+    storageSpec: {}
+
+    # Service monitor selector (scrape all namespaces)
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+
+  # Prometheus service configuration
+  service:
+    type: ClusterIP
+    port: 9090
+
+  # Ingress configuration - expose at prometheus.localhost
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - prometheus.localhost
+    paths:
+      - /
+    pathType: Prefix
+
+# Alertmanager - disabled for CI
+alertmanager:
+  enabled: false
+
+# Grafana - disabled for CI (metrics only in Prometheus)
+grafana:
+  enabled: false
+
+# Node exporter for system metrics
+# Tolerates all taints to run on every node (including control-plane and workers)
+nodeExporter:
+  enabled: true
+  tolerations:
+    - operator: "Exists"
+
+# Kube-state-metrics for Kubernetes object metrics
+kubeStateMetrics:
+  enabled: true
+
+# kube-state-metrics subchart tolerations
+kube-state-metrics:
+  tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+# Prometheus Operator configuration
+prometheusOperator:
+  tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+  # Admission webhooks - tolerate all taints for job scheduling
+  admissionWebhooks:
+    patch:
+      tolerations:
+        - operator: "Exists"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# Default rules - minimal for CI
+defaultRules:
+  create: true
+  rules:
+    alertmanager: false
+    etcd: false
+    configReloaders: false
+    general: false
+    k8sContainerCpuUsageSecondsTotal: false
+    k8sContainerMemoryCache: false
+    k8sContainerMemoryRss: false
+    k8sContainerMemorySwap: false
+    k8sContainerResource: false
+    k8sContainerMemoryWorkingSetBytes: false
+    k8sPodOwner: false
+    kubeApiserverAvailability: false
+    kubeApiserverBurnrate: false
+    kubeApiserverHistogram: false
+    kubeApiserverSlos: false
+    kubeControllerManager: false
+    kubelet: false
+    kubeProxy: false
+    kubePrometheusGeneral: true
+    kubePrometheusNodeRecording: true
+    kubernetesApps: false
+    kubernetesResources: false
+    kubernetesStorage: false
+    kubernetesSystem: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+    kubeStateMetrics: false
+    network: false
+    node: false
+    nodeExporterAlerting: false
+    nodeExporterRecording: false
+    prometheus: false
+    prometheusOperator: false
+    windows: false
+
+# Scrape configs for additional targets
+additionalScrapeConfigs: []

@@ -1,0 +1,74 @@
+# Kind Cluster Configuration for gdnts CI Pipeline
+# Multi-node cluster with 1 control-plane and 2 worker nodes
+# Port mappings use unprivileged ports (>= 1024) for rootless container runtimes
+# Taints: control-plane prevents app scheduling, workers require workload toleration
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: gdnts-ci
+
+nodes:
+  # Control plane node with ingress port mappings
+  # Default control-plane taint is added automatically by Kubernetes
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      # HTTP traffic for ingress (using unprivileged port 8080)
+      - containerPort: 80
+        hostPort: 8080
+        protocol: TCP
+      # HTTPS traffic for ingress (using unprivileged port 8443)
+      - containerPort: 443
+        hostPort: 8443
+        protocol: TCP
+      # NodePort range for services
+      - containerPort: 30000
+        hostPort: 30000
+        protocol: TCP
+      - containerPort: 30001
+        hostPort: 30001
+        protocol: TCP
+
+  # Worker node 1 for application workloads
+  # Tainted to require workload=apps toleration
+  - role: worker
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          taints:
+            - key: "workload"
+              value: "apps"
+              effect: "NoSchedule"
+
+  # Worker node 2 for application workloads
+  # Tainted to require workload=apps toleration
+  - role: worker
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          taints:
+            - key: "workload"
+              value: "apps"
+              effect: "NoSchedule"
+
+# Networking configuration
+networking:
+  # Use default CNI (kindnet)
+  disableDefaultCNI: false
+  # Pod subnet
+  podSubnet: "10.244.0.0/16"
+  # Service subnet
+  serviceSubnet: "10.96.0.0/12"
+
+# Container registry configuration for faster image pulls
+containerdConfigPatches:
+  - |-
+    [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+      endpoint = ["https://registry-1.docker.io"]

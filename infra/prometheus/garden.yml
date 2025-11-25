@@ -1,0 +1,56 @@
+# Garden Module for Prometheus Stack
+# Deploys kube-prometheus-stack with 5s scrape interval and remote write receiver
+
+# NOTE: CRDs must be installed BEFORE this deploy runs.
+# The Makefile handles this by running prometheus-crds target first.
+
+kind: Deploy
+type: helm
+name: prometheus
+description: Deploy Prometheus monitoring stack with metrics collection
+
+# No Garden dependencies - CRD installation is controlled by Makefile
+
+spec:
+  chart:
+    name: kube-prometheus-stack
+    repo: https://prometheus-community.github.io/helm-charts
+    version: "79.7.1"
+  namespace: monitoring
+  releaseName: prometheus
+  valueFiles:
+    - values.yaml
+  timeout: 600
+  atomic: true
+
+---
+# Validation task: Wait for Prometheus to be ready and accepting metrics
+kind: Run
+type: exec
+name: validate-prometheus-ready
+description: Wait for Prometheus StatefulSet and verify remote write endpoint (fail-fast)
+
+dependencies:
+  - deploy.prometheus
+
+spec:
+  command:
+    - bash
+    - -c
+    - |
+      set -euo pipefail
+      KUBECTL="${local.projectPath}/.tools/bin/kubectl"
+      export KUBECONFIG="${local.projectPath}/.kube/config"
+
+      echo "⏳ Waiting for Prometheus StatefulSet..."
+      $KUBECTL rollout status statefulset/prometheus-prometheus-kube-prometheus-prometheus \
+        -n monitoring --timeout=180s
+
+      echo "🔍 Verifying Prometheus remote write endpoint..."
+      $KUBECTL run prom-test --rm -i --restart=Never \
+        --image=curlimages/curl:8.5.0 \
+        --timeout=30s \
+        --overrides='{"spec":{"tolerations":[{"operator":"Exists"}]}}' \
+        -- curl -sf http://prometheus-kube-prometheus-prometheus.monitoring:9090/-/ready
+
+      echo "✅ Prometheus ready and accepting connections"
