@@ -1,0 +1,45 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "http-echo.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "http-echo.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.foo.host | quote }}
+        - {{ .Values.bar.host | quote }}
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    # Route foo.localhost to foo service
+    - host: {{ .Values.foo.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "http-echo.fullname" . }}-foo
+                port:
+                  number: {{ .Values.service.port }}
+    # Route bar.localhost to bar service
+    - host: {{ .Values.bar.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "http-echo.fullname" . }}-bar
+                port:
+                  number: {{ .Values.service.port }}
+{{- end }}

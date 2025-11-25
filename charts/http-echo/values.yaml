@@ -1,0 +1,159 @@
+# Default values for http-echo.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# -- @section Image Configuration
+
+image:
+  # -- Container image repository
+  repository: hashicorp/http-echo
+  # -- Container image tag with digest for immutable reference
+  # @default -- `v0.2.3` with SHA256 digest
+  tag: "v0.2.3@sha256:ba27d460cd1f22a1a4331bdf74f4fccbc025552357e8a3249c40ae216275de96"
+  # -- Image pull policy. Set to Always for production
+  pullPolicy: Always
+
+# -- @section Foo Deployment Configuration
+# Configuration for the "foo" http-echo deployment
+
+foo:
+  # -- Number of replicas for foo deployment (ignored if HPA enabled)
+  replicas: 2
+  # -- Text response returned by the foo endpoint
+  text: "foo"
+  # -- Hostname for ingress routing to foo service
+  host: foo.localhost
+  # -- Resource requests and limits for foo pods
+  # @default -- Uses shared `resources` if not specified
+  resources: {}
+  # -- Horizontal Pod Autoscaler configuration for foo
+  hpa:
+    # -- Enable HPA for foo deployment
+    enabled: false
+    # -- Minimum number of replicas
+    minReplicas: 2
+    # -- Maximum number of replicas
+    maxReplicas: 3
+    # -- Target CPU utilization percentage for scaling
+    targetCPUUtilizationPercentage: 65
+
+# -- @section Bar Deployment Configuration
+# Configuration for the "bar" http-echo deployment
+
+bar:
+  # -- Number of replicas for bar deployment (ignored if HPA enabled)
+  replicas: 2
+  # -- Text response returned by the bar endpoint
+  text: "bar"
+  # -- Hostname for ingress routing to bar service
+  host: bar.localhost
+  # -- Resource requests and limits for bar pods
+  # @default -- Uses shared `resources` if not specified
+  resources: {}
+  # -- Horizontal Pod Autoscaler configuration for bar
+  hpa:
+    # -- Enable HPA for bar deployment
+    enabled: false
+    # -- Minimum number of replicas
+    minReplicas: 2
+    # -- Maximum number of replicas
+    maxReplicas: 3
+    # -- Target CPU utilization percentage for scaling
+    targetCPUUtilizationPercentage: 65
+
+# -- @section Common Pod Configuration
+
+# -- Tolerations for pod scheduling
+# @default -- `[]` (no tolerations)
+tolerations: []
+
+# -- @section Service Configuration
+
+service:
+  # -- Kubernetes service type
+  type: ClusterIP
+  # -- Service port (http-echo listens on this port)
+  port: 5678
+
+# -- @section Ingress Configuration
+
+ingress:
+  # -- Enable ingress resource creation
+  enabled: true
+  # -- Ingress class name (e.g., nginx, traefik)
+  className: nginx
+  # -- Additional ingress annotations
+  # @default -- SSL redirect annotations for nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  # -- TLS configuration for ingress
+  tls:
+    # -- Enable TLS termination
+    enabled: true
+    # -- Name of the TLS secret (created by cert-manager if certificate.enabled)
+    secretName: http-echo-tls
+
+# -- @section Certificate Configuration
+# Uses cert-manager to provision TLS certificates
+
+certificate:
+  # -- Enable cert-manager Certificate resource
+  enabled: true
+  # -- Certificate issuer reference
+  issuerRef:
+    # -- Name of the ClusterIssuer or Issuer
+    name: selfsigned-cluster-issuer
+    # -- Kind of issuer (ClusterIssuer or Issuer)
+    kind: ClusterIssuer
+  # -- Certificate validity duration
+  duration: 2160h
+  # -- Time before expiry to renew certificate
+  renewBefore: 360h
+  # -- DNS names to include in the certificate
+  # @default -- foo and bar hostnames for localhost and cluster.local
+  dnsNames:
+    - foo.localhost
+    - bar.localhost
+    - foo.cluster.local
+    - bar.cluster.local
+
+# -- @section Resource Configuration
+
+# -- Default resource requests and limits for all pods
+# Used when foo.resources or bar.resources are not specified
+resources:
+  requests:
+    # -- CPU request
+    cpu: 10m
+    # -- Memory request
+    memory: 16Mi
+  limits:
+    # -- CPU limit
+    cpu: 50m
+    # -- Memory limit
+    memory: 32Mi
+
+# -- @section Pod Disruption Budget
+
+podDisruptionBudget:
+  # -- Enable PodDisruptionBudget
+  enabled: false
+  # -- Minimum number of pods that must be available
+  minAvailable: 1
+
+# -- @section Service Account Configuration
+
+serviceAccount:
+  # -- Create a service account
+  create: true
+  # -- Service account name (auto-generated if empty)
+  # @default -- Generated using fullname template
+  name: ""
+
+# -- @section Network Policy Configuration
+
+networkPolicy:
+  # -- Enable NetworkPolicy for pod-to-pod communication control
+  # Allows ingress from ingress-nginx namespace and egress for DNS
+  enabled: true

@@ -1,0 +1,37 @@
+apiVersion: v2
+name: http-echo
+description: |
+  A Helm chart that deploys two http-echo instances (foo and bar) with shared TLS certificate,
+  ingress routing, and horizontal pod autoscaling support. Designed for testing and demonstration
+  of Kubernetes ingress, TLS termination, and load balancing capabilities.
+
+type: application
+version: 1.0.0
+appVersion: "0.2.3"
+
+# -- Chart keywords for search
+keywords:
+  - echo
+  - http
+  - test
+  - ingress
+  - tls
+  - load-testing
+
+# -- Chart maintainers
+maintainers:
+  - name: Vladyslav Dehtiar
+    url: https://github.com/dehtiarone
+
+# -- Project home page
+home: https://github.com/dehtiarone/gdnts-ci
+
+# -- Chart sources
+sources:
+  - https://github.com/dehtiarone/gdnts-ci/tree/main/charts/http-echo
+
+# -- Minimum Kubernetes version
+kubeVersion: ">=1.28.0-0"
+
+# -- Chart dependencies
+dependencies: []
