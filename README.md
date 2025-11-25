@@ -4,7 +4,8 @@ End-to-end Kubernetes CI/CD pipeline with load testing and observability.
 
 ## Features
 
-- Declarative approach to deploy kind cluster, required components such as `ingress-nginx` using [Link text Here](https://link-url-here.org)
+- Declarative approach to deploy kind cluster, required components such as `ingress-nginx` using [Garden](https://github.com/garden-io/garden)
+- As much as possible of CI steps are protected from supply chain attacks via thorough checksum verification of all tools that are used during the execution of pipeline
 - Secure helm chart for provisioning apps - 100% checkov compliant
 - CPU/RAM and load tests results stored in Prometheus
 - Advanced script for extraction of data from Prometheus and generation of test reports
@@ -369,4 +370,12 @@ gdnts-ci/
 ├── project.garden.yml        # Garden project configuration
 ├── Makefile                  # Build orchestration
 └── README.md                 # This file
+```
+
+## Time spent
+
+```
+Development - 1.5 hrs
+Testing - 2.5 hrs
+Documenting 1 hrs
 ```
