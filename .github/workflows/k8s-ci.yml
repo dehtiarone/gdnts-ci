@@ -1,0 +1,119 @@
+# gdnts CI Pipeline - GitHub Actions Workflow
+# Executes the same Makefile targets as local development
+#
+# Security: All tool versions are pinned with SHA256 checksum verification in Makefile
+
+name: gdnts CI Pipeline
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      skip_cleanup:
+        description: 'Skip cluster cleanup (for debugging)'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  ci-pipeline:
+    name: CI Pipeline
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      # ============================================================
+      # Phase 1: Prepare Infrastructure
+      # ============================================================
+      - name: "[Infrastructure] Checkout code"
+        uses: actions/checkout@v4
+
+      - name: "[Infrastructure] Setup tools"
+        run: make setup
+
+      - name: "[Infrastructure] Create cluster"
+        run: make cluster
+
+      - name: "[Infrastructure] Deploy infra components"
+        run: |
+          echo "::group::Deploy nginx-ingress"
+          make deploy-ingress
+          echo "::endgroup::"
+          echo "::group::Deploy cert-manager"
+          make deploy-certmanager
+          echo "::endgroup::"
+          echo "::group::Deploy prometheus"
+          make deploy-prometheus
+          echo "::endgroup::"
+          echo "✅ Infrastructure deployed"
+
+      # ============================================================
+      # Phase 2: Deploy Applications
+      # ============================================================
+      - name: "[Application] Deploy application"
+        run: make app
+
+      - name: "[Application] Validate deployments"
+        run: make validate
+
+      # ============================================================
+      # Phase 3: Run Load Testing
+      # ============================================================
+      - name: "[Load Testing] Run load tests"
+        run: make loadtest
+
+      - name: "[Load Testing] Generate reports"
+        run: make reports
+
+      - name: "[Load Testing] Upload HTML report"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: html-report
+          path: reports/output/report.html
+          retention-days: 30
+
+      - name: "[Load Testing] Upload JUnit report"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: junit-report
+          path: reports/output/junit.xml
+          retention-days: 30
+
+      - name: "[Load Testing] Publish test results"
+        uses: mikepenz/action-junit-report@v4
+        if: always()
+        with:
+          report_paths: reports/output/junit.xml
+          fail_on_failure: false
+          include_passed: true
+          detailed_summary: true
+
+      # ============================================================
+      # Cleanup (always runs)
+      # ============================================================
+      - name: "[Cleanup] Tear down cluster"
+        if: always() && inputs.skip_cleanup != 'true'
+        run: make cleanup
+
+      - name: "[Summary] Pipeline results"
+        if: always()
+        run: |
+          echo "## CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Phase | Steps |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Infrastructure | Setup tools, Create cluster, Deploy infra |" >> $GITHUB_STEP_SUMMARY
+          echo "| Application | Deploy app, Validate deployments |" >> $GITHUB_STEP_SUMMARY
+          echo "| Load Testing | Run tests, Generate reports |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Reports:** Check the Artifacts section for detailed reports" >> $GITHUB_STEP_SUMMARY
