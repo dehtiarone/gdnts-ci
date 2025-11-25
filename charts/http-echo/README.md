@@ -1,6 +1,6 @@
 # http-echo
 
-![Version: 1.0.0](https://img.shields.io/badge/Version-1.0.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.2.3](https://img.shields.io/badge/AppVersion-0.2.3-informational?style=flat-square)
+![Version: 1.0.0](https://img.shields.io/badge/Version-1.0.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.0](https://img.shields.io/badge/AppVersion-1.0-informational?style=flat-square)
 
 A Helm chart that deploys two http-echo instances (foo and bar) with shared TLS certificate,
 ingress routing, and horizontal pod autoscaling support. Designed for testing and demonstration
@@ -192,7 +192,7 @@ Kubernetes: `>=1.28.0-0`
 | foo.text | string | `"foo"` | Text response returned by the foo endpoint |
 | image.pullPolicy | string | `"Always"` | Image pull policy. Set to Always for production |
 | image.repository | string | `"hashicorp/http-echo"` | Container image repository |
-| image.tag | string | `v0.2.3` with SHA256 digest | Container image tag with digest for immutable reference |
+| image.tag | string | `v1.0` | Container image tag |
 | ingress | object | `{"annotations":{"nginx.ingress.kubernetes.io/force-ssl-redirect":"true","nginx.ingress.kubernetes.io/ssl-redirect":"true"},"className":"nginx","enabled":true,"tls":{"enabled":true,"secretName":"http-echo-tls"}}` | @section Ingress Configuration |
 | ingress.annotations | object | SSL redirect annotations for nginx | Additional ingress annotations |
 | ingress.className | string | `"nginx"` | Ingress class name (e.g., nginx, traefik) |

@@ -1,0 +1,97 @@
+# Garden Module for http-echo Application Deployment
+# Deploys the http-echo Helm chart with foo and bar services
+
+kind: Deploy
+type: helm
+name: http-echo
+description: Deploy http-echo application with foo and bar endpoints
+
+# No dependencies - order is controlled by Makefile
+
+spec:
+  chart:
+    path: .
+  namespace: default
+  releaseName: http-echo
+  timeout: 300
+  atomic: true
+  values:
+    # Tolerations for worker node taint (apps run on workers only)
+    tolerations:
+      - key: "workload"
+        operator: "Equal"
+        value: "apps"
+        effect: "NoSchedule"
+
+    # Foo deployment with HPA and resources
+    foo:
+      replicas: 2
+      text: "foo"
+      host: foo.localhost
+      resources:
+        requests:
+          cpu: 100m
+          memory: 32Mi
+        limits:
+          cpu: 200m
+          memory: 64Mi
+      hpa:
+        enabled: true
+        minReplicas: 2
+        maxReplicas: 3
+        targetCPUUtilizationPercentage: 65
+
+    # Bar deployment with HPA and resources
+    bar:
+      replicas: 2
+      text: "bar"
+      host: bar.localhost
+      resources:
+        requests:
+          cpu: 100m
+          memory: 32Mi
+        limits:
+          cpu: 200m
+          memory: 64Mi
+      hpa:
+        enabled: true
+        minReplicas: 2
+        maxReplicas: 3
+        targetCPUUtilizationPercentage: 65
+
+    # Certificate configuration
+    certificate:
+      enabled: true
+      issuerRef:
+        name: selfsigned-cluster-issuer
+        kind: ClusterIssuer
+
+---
+# Validation task: Wait for http-echo deployments and certificate
+kind: Run
+type: exec
+name: validate-http-echo-ready
+description: Wait for http-echo deployments and TLS certificate to be ready (fail-fast)
+
+dependencies:
+  - deploy.http-echo
+
+spec:
+  command:
+    - bash
+    - -c
+    - |
+      set -euo pipefail
+      KUBECTL="${local.projectPath}/.tools/bin/kubectl"
+      export KUBECONFIG="${local.projectPath}/.kube/config"
+
+      echo "⏳ Waiting for foo deployment..."
+      $KUBECTL rollout status deployment/http-echo-foo -n default --timeout=120s
+
+      echo "⏳ Waiting for bar deployment..."
+      $KUBECTL rollout status deployment/http-echo-bar -n default --timeout=120s
+
+      echo "⏳ Waiting for TLS certificate..."
+      $KUBECTL wait --for=condition=Ready certificate/http-echo-tls -n default --timeout=120s
+
+      echo "✅ http-echo application ready"

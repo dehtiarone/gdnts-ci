@@ -7,9 +7,9 @@
 image:
   # -- Container image repository
   repository: hashicorp/http-echo
-  # -- Container image tag with digest for immutable reference
-  # @default -- `v0.2.3` with SHA256 digest
-  tag: "v0.2.3@sha256:ba27d460cd1f22a1a4331bdf74f4fccbc025552357e8a3249c40ae216275de96"
+  # -- Container image tag
+  # @default -- `v1.0`
+  tag: "1.0"
   # -- Image pull policy. Set to Always for production
   pullPolicy: Always
 
