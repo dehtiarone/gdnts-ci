@@ -1,0 +1,46 @@
+# Tools directory (downloaded binaries)
+.tools/
+
+# Kubernetes config
+.kube/
+
+# Garden folders
+.garden/
+.garden/cache/
+.garden/logs/
+
+# Python virtual environment
+reports/.venv/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python distribution / packaging
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Report outputs
+reports/output/
+
+# Temporary files
+*.tmp
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Helm packages
+*.tgz
+charts/*/charts/
