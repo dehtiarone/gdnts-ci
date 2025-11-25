@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>gdnts CI - Load Test Report</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #1a1a1a;
+      background: #ffffff;
+      padding: 40px 20px;
+    }
+
+    .container { max-width: 1000px; margin: 0 auto; }
+
+    header {
+      background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 50%, #f97316 100%);
+      color: white;
+      padding: 48px 40px;
+      border-radius: 24px;
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-size: 2.25em;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .timestamp { opacity: 0.9; font-size: 1em; }
+    .data-source { opacity: 0.8; font-size: 0.9em; margin-top: 8px; }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .metric-card {
+      background: #fafafa;
+      border-radius: 20px;
+      padding: 28px;
+      border: 1px solid #e5e5e5;
+    }
+
+    .metric-card h3 {
+      color: #666;
+      font-size: 0.85em;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+
+    .metric-value {
+      font-size: 2.5em;
+      font-weight: 700;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+    }
+
+    .metric-value.success { color: #22c55e; }
+    .metric-value.warning { color: #f59e0b; }
+    .metric-value.danger { color: #ef4444; }
+
+    .metric-unit {
+      font-size: 0.4em;
+      font-weight: 500;
+      color: #888;
+      margin-left: 4px;
+    }
+
+    .section {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 24px;
+      border: 1px solid #e5e5e5;
+    }
+
+    .section h2 {
+      font-size: 1.5em;
+      font-weight: 600;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #f0f0f0;
+      color: #1a1a1a;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    th, td {
+      padding: 16px 20px;
+      text-align: left;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    th {
+      background: #fafafa;
+      font-weight: 600;
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    tr:hover { background: #fafafa; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 0.75em;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .status-badge.success { background: #dcfce7; color: #166534; }
+    .status-badge.warning { background: #fef3c7; color: #92400e; }
+    .status-badge.danger { background: #fee2e2; color: #991b1b; }
+
+    /* Full-width graph container - stacked vertically */
+    .graph-container {
+      background: #fafafa;
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid #e5e5e5;
+      margin-bottom: 24px;
+    }
+
+    .graph-container:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Stages display */
+    .stages-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .stage-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      background: #f3f4f6;
+      border-radius: 6px;
+      font-size: 0.85em;
+      color: #4b5563;
+    }
+
+    .stage-badge .arrow {
+      color: #9ca3af;
+      margin: 0 2px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 32px;
+      color: #888;
+      font-size: 0.9em;
+    }
+
+    footer p:first-child {
+      font-weight: 500;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>gdnts CI - Load Test Report</h1>
+      <p class="timestamp">Generated: {{ timestamp }}</p>
+      <p class="data-source">Data Source: Prometheus</p>
+    </header>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <h3>Total Requests</h3>
+        <div class="metric-value">{{ k6.total_requests }}</div>
+      </div>
+      <div class="metric-card">
+        <h3>Request Rate</h3>
+        <div class="metric-value">{{ "%.2f"|format(k6.request_rate) }}<span class="metric-unit">req/s</span></div>
+      </div>
+      <div class="metric-card">
+        <h3>P95 Latency</h3>
+        <div class="metric-value {{ p95_status }}">{{ "%.2f"|format(k6.p95_latency_ms) }}<span class="metric-unit">ms</span></div>
+      </div>
+      <div class="metric-card">
+        <h3>Error Rate</h3>
+        <div class="metric-value {{ error_status }}">{{ "%.2f"|format(k6.error_rate * 100) }}<span class="metric-unit">%</span></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Response Time Distribution</h2>
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>Value</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Minimum</td>
+            <td>{{ "%.2f"|format(k6.min_latency_ms) }} ms</td>
+            <td><span class="status-badge success">OK</span></td>
+          </tr>
+          <tr>
+            <td>Average</td>
+            <td>{{ "%.2f"|format(k6.avg_latency_ms) }} ms</td>
+            <td><span class="status-badge success">OK</span></td>
+          </tr>
+          <tr>
+            <td>P95</td>
+            <td>{{ "%.2f"|format(k6.p95_latency_ms) }} ms</td>
+            <td><span class="status-badge {{ p95_status }}">{{ p95_status|upper }}</span></td>
+          </tr>
+          <tr>
+            <td>Maximum</td>
+            <td>{{ "%.2f"|format(k6.max_latency_ms) }} ms</td>
+            <td><span class="status-badge warning">INFO</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Resource Usage Over Time</h2>
+      <div class="graph-container">{{ cpu_graph | safe }}</div>
+      <div class="graph-container">{{ memory_graph | safe }}</div>
+    </div>
+
+    <div class="section">
+      <h2>Resource Utilization (Per-Pod)</h2>
+      <table>
+        <thead>
+          <tr><th>Pod</th><th>Avg CPU</th><th>Max CPU</th><th>Avg Memory</th><th>Max Memory</th></tr>
+        </thead>
+        <tbody>
+          {% for pod in pods %}
+          <tr>
+            <td>{{ pod.pod_name }}</td>
+            <td>{{ "%.1f"|format(pod.avg_cpu_millicores) }} m</td>
+            <td>{{ "%.1f"|format(pod.max_cpu_millicores) }} m</td>
+            <td>{{ "%.1f"|format(pod.avg_memory_mb) }} MB</td>
+            <td>{{ "%.1f"|format(pod.max_memory_mb) }} MB</td>
+          </tr>
+          {% endfor %}
+          <tr style="font-weight:600;background:#fafafa;">
+            <td>TOTAL (Cumulative)</td>
+            <td>{{ "%.1f"|format(cumulative.avg_cpu_millicores) }} m</td>
+            <td>{{ "%.1f"|format(cumulative.max_cpu_millicores) }} m</td>
+            <td>{{ "%.1f"|format(cumulative.avg_memory_mb) }} MB</td>
+            <td>{{ "%.1f"|format(cumulative.max_memory_mb) }} MB</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Test Configuration</h2>
+      <table>
+        <tbody>
+          {% if test_config %}
+          <tr>
+            <td><strong>Test Duration</strong></td>
+            <td>{{ test_config.total_duration }}</td>
+          </tr>
+          <tr>
+            <td><strong>Virtual Users (Peak)</strong></td>
+            <td>{{ test_config.peak_vus }}</td>
+          </tr>
+          <tr>
+            <td><strong>Load Stages</strong></td>
+            <td>
+              <div class="stages-list">
+                {% for stage in test_config.stages %}
+                <span class="stage-badge">{{ stage.duration }} <span class="arrow">&rarr;</span> {{ stage.target }} VUs</span>
+                {% endfor %}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Targets</strong></td>
+            <td>{{ test_config.targets | join(', ') }}</td>
+          </tr>
+          {% if test_config.thresholds %}
+          <tr>
+            <td><strong>Thresholds</strong></td>
+            <td>
+              {% for key, value in test_config.thresholds.items() %}
+              {{ key }}: {{ value }}{% if not loop.last %}, {% endif %}
+              {% endfor %}
+            </td>
+          </tr>
+          {% endif %}
+          {% else %}
+          <tr><td><strong>Test Duration</strong></td><td>4m30s</td></tr>
+          <tr><td><strong>Virtual Users (Peak)</strong></td><td>160</td></tr>
+          <tr><td><strong>Targets</strong></td><td>foo.localhost, bar.localhost</td></tr>
+          {% endif %}
+          <tr><td><strong>P95 Threshold</strong></td><td>&lt; 500ms</td></tr>
+          <tr><td><strong>Error Threshold</strong></td><td>&lt; 1%</td></tr>
+          <tr><td><strong>Metrics Scrape Interval</strong></td><td>5 seconds</td></tr>
+          <tr><td><strong>Data Source</strong></td><td>Prometheus (k6 remote write + container metrics)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer>
+      <p>Generated by gdnts CI Pipeline | {{ timestamp_iso }}</p>
+      <p style="font-size:0.85em;margin-top:8px;">All metrics sourced from Prometheus</p>
+    </footer>
+  </div>
+</body>
+</html>

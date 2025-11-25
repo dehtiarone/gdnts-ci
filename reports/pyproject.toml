@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=75.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gdnts-reports"
+version = "1.0.0"
+description = "Load test report generator for gdnts CI"
+requires-python = ">=3.9"
+dependencies = [
+    "prometheus-api-client==0.6.0",
+    "jinja2==3.1.4",
+    "svg.charts>=7.3.1",
+]
+
+[project.scripts]
+generate-reports = "scripts.generate_reports:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["scripts*"]
+
+[tool.setuptools.package-data]
+scripts = ["*.template"]
